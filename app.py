@@ -1,7 +1,7 @@
-from flask import Flask, redirect, session, render_template                                # Import the Flask class
+from flask import Flask, redirect, session, render_template, abort                                # Import the Flask class
 from flask_debugtoolbar import DebugToolbarExtension        # Import DebugToolbarExtension class
 from models import connect_db, db, User
-from forms import RegisterUserForm                           # Import connect_db, db, and model
+from forms import RegisterUserForm, LoginForm                          # Import connect_db, db, and model
 import os                                                   # Import os module for env vars & db link
 
 app = Flask(__name__)                                       # Create Flask app instance
@@ -54,3 +54,45 @@ def register():
     else:
 
         return render_template("register.html", form=form)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Produce login form or handle login."""
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        name = form.username.data
+        pwd = form.password.data
+
+        # authenticate will return a user or False
+        user = User.authenticate(name, pwd)
+
+        if user:
+            session["username"] = user.username  # keep logged in
+            return redirect("/secret")
+
+        else:
+            form.username.errors = ["Bad name/password"]
+
+    return render_template("login.html", form=form)
+
+@app.get('/secret')
+def render_secret_page():
+    """Renders the secret logged-in page for users."""
+    if session["username"]:
+        return render_template("secret.html")
+    else:
+        return redirect('/')
+
+@app.get('/users/<str:username>')
+def show_user_profile(username):
+    """Renders the logged in user's page."""
+
+    user = User.query.get_or_404(username)
+
+    if session["username"] != user.username:
+        abort(404)
+    else:
+        return render_template("profile.html")

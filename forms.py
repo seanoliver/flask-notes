@@ -30,6 +30,18 @@ class RegisterUserForm(FlaskForm):
         validators=[InputRequired()]
     )
 
+class LoginForm(FlaskForm):
+    """Form to log users into the Flask Notes app."""
+
+    username = StringField(
+        "Username",
+        validators=[InputRequired()]
+    )
+
+    password = PasswordField(
+        "Password",
+        validators=[InputRequired()]
+    )
 
 class CSRFProtectForm(FlaskForm):
     """Form just for CSRF Protection"""

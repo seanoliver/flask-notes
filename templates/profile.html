@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1>Hi, {% user.first_name %}!</h1>
+
+<p>Here's your profile information:</p>
+
+<ul>
+  <li>Name: {% user.first_name ~ " " ~ user.last_name %}</li>
+  <li>Username: {% user.username %}</li>
+  <li>Email: {% user.email %}</li>
+</ul>
+
+{% endblock %}
