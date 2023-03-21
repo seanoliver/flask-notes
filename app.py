@@ -1,7 +1,7 @@
-from flask import Flask, redirect, session, render_template, abort                                # Import the Flask class
+from flask import Flask, redirect, session, render_template, flash                                # Import the Flask class
 from flask_debugtoolbar import DebugToolbarExtension        # Import DebugToolbarExtension class
 from models import connect_db, db, User
-from forms import RegisterUserForm, LoginForm                          # Import connect_db, db, and model
+from forms import RegisterUserForm, LoginForm, CSRFProtectForm                          # Import connect_db, db, and model
 import os                                                   # Import os module for env vars & db link
 
 app = Flask(__name__)                                       # Create Flask app instance
@@ -49,7 +49,8 @@ def register():
         session["username"] = user.username
 
         # on successful login, redirect to secret page
-        return redirect("/secret")
+        flash("Registered!")
+        return redirect(f"/users/{user.username}")
 
     else:
 
@@ -71,28 +72,49 @@ def login():
 
         if user:
             session["username"] = user.username  # keep logged in
-            return redirect("/secret")
+            flash("Logged in!")
+            return redirect(f"/users/{user.username}")
 
         else:
             form.username.errors = ["Bad name/password"]
 
     return render_template("login.html", form=form)
 
-@app.get('/secret')
-def render_secret_page():
-    """Renders the secret logged-in page for users."""
-    if session["username"]:
-        return render_template("secret.html")
-    else:
-        return redirect('/')
+# @app.get('/secret')
+# def render_secret_page():
+#     """Renders the secret logged-in page for users."""
+#     if session["username"]:
+#         return render_template("secret.html")
+#     else:
+#         return redirect(f"/users/{user.username}")
 
-@app.get('/users/<str:username>')
+@app.get('/users/<username>')
 def show_user_profile(username):
     """Renders the logged in user's page."""
 
     user = User.query.get_or_404(username)
+    form = CSRFProtectForm()
 
-    if session["username"] != user.username:
-        abort(404)
+    if "username" not in session:
+        flash("You must be logged in to view!")
+        return redirect("/")
+    elif session["username"] != user.username:
+        return redirect(f"/users/{session['username']}")
     else:
-        return render_template("profile.html")
+        return render_template(
+            "profile.html",
+            user=user,
+            form=form
+        )
+
+@app.post('/logout')
+def logout_user():
+    """Log out the user and clear the username from the session object."""
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+        session.pop("username", None)
+
+    return redirect("/")
+
