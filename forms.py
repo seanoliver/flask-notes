@@ -5,6 +5,7 @@ from wtforms.validators import InputRequired, Email
 class RegisterUserForm(FlaskForm):
     """Form for user registration."""
 
+    # TODO: Add Length validation for each field (since most have length limits)
     username = StringField(
         "Username",
         validators=[InputRequired()]
@@ -30,9 +31,11 @@ class RegisterUserForm(FlaskForm):
         validators=[InputRequired()]
     )
 
+
 class LoginForm(FlaskForm):
     """Form to log users into the Flask Notes app."""
 
+    # TODO: Optionally add length validators here, too.
     username = StringField(
         "Username",
         validators=[InputRequired()]
@@ -42,6 +45,7 @@ class LoginForm(FlaskForm):
         "Password",
         validators=[InputRequired()]
     )
+
 
 class CSRFProtectForm(FlaskForm):
     """Form just for CSRF Protection"""

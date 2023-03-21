@@ -43,6 +43,8 @@ class User (db.Model):
         nullable=False,
     )
 
+    # TODO: Class method to register the user; it's more conventional to do the
+    # user creation (and other data-related tasks) in model
     @classmethod
     def get_password_hash(cls, password):
         """Return hashed password"""

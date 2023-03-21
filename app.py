@@ -4,6 +4,11 @@ from models import connect_db, db, User
 from forms import RegisterUserForm, LoginForm, CSRFProtectForm                          # Import connect_db, db, and model
 import os                                                   # Import os module for env vars & db link
 
+# TODO: Organize imports list:
+#        - Start with os
+#        - Sections for flask / external modules
+#        - Sections for internal models, forms, etc.
+
 app = Flask(__name__)                                       # Create Flask app instance
 app.config['SECRET_KEY'] = "oh-so-secret"                   # Set app secret key
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False          # Disable Debug Toolbar redirect interception
@@ -35,6 +40,7 @@ def register():
         first_name = form.first_name.data
         last_name = form.last_name.data
 
+        # TODO: Have a single register() function and pass user data into it
         user = User(
             username = username,
             password = User.get_password_hash(password),
@@ -43,6 +49,7 @@ def register():
             last_name = last_name
             )
 
+        # TODO: db.session.add typically lives in the models.py
         db.session.add(user)
         db.session.commit()
 
@@ -91,14 +98,18 @@ def login():
 @app.get('/users/<username>')
 def show_user_profile(username):
     """Renders the logged in user's page."""
+    # TODO: Update docstring to reflect the if .. else behavior
 
-    user = User.query.get_or_404(username)
+    user = User.query.get_or_404(username) # TODO: Do authentication before
+    # you're doing the work to get the user from the DB.
     form = CSRFProtectForm()
 
     if "username" not in session:
         flash("You must be logged in to view!")
         return redirect("/")
     elif session["username"] != user.username:
+        # TODO: Could raise an UnauthorizedError to let them know they're not
+        # allowed to go there.
         return redirect(f"/users/{session['username']}")
     else:
         return render_template(
@@ -115,6 +126,7 @@ def logout_user():
 
     if form.validate_on_submit():
         session.pop("username", None)
-
+    # TODO: Raise an UnauthorizedError in the event logout fails (e.g. they're
+    # doing it from an incorrect source, etc.)
     return redirect("/")
 
