@@ -4,12 +4,14 @@ from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
+
 def connect_db(app):
     """Connect to database."""
 
     app.app_context().push()
     db.app = app
     db.init_app(app)
+
 
 class User (db.Model):
     """A user."""
@@ -43,6 +45,8 @@ class User (db.Model):
         nullable=False,
     )
 
+    notes = db.relationship('Note', backref="user")
+
     # TODO: Class method to register the user; it's more conventional to do the
     # user creation (and other data-related tasks) in model
     @classmethod
@@ -66,3 +70,31 @@ class User (db.Model):
             return u
         else:
             return False
+
+
+class Note(db.Model):
+    """A note."""
+    """backref to 'User' class = 'user'"""
+
+    __tablename__ = "notes"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    title = db.Column(
+        db.String(100),
+        nullable = False
+    )
+
+    content = db.Column(
+        db.Text,
+        nullable = False
+    )
+
+    owner = db.Column(
+        db.String(20),
+        db.ForeignKey('users.username')
+    )

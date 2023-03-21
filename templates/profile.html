@@ -11,9 +11,30 @@
   <li>Email: {{ user.email }}</li>
 </ul>
 
+<h2>Notes:</h2>
+<ul>
+{% if notes %}
+  {% for note in notes %}
+    <a href="notes/{{ note.id }}/update"><h4>{{ note.title }}</h4></a>
+      <li>{{ note.content }}</li>
+  {% endfor %}
+{% else %}
+  <li>You don't have no notes</li>
+{% endif %}
+</ul>
+
+<a href="/users/{{ user.username }}/notes/add">Add notes!</a>
+<br>
+
 <form method="POST" action="/logout">
   {{form.hidden_tag()}}
   <button type="submit">Logout</button>
 </form>
+
+<form method="POST" action="/users/{{ user.username }}/delete">
+  {{form.hidden_tag()}}
+  <button type="submit">Delete Account</button>
+</form>
+
 
 {% endblock %}

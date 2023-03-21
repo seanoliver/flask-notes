@@ -1,7 +1,7 @@
 from flask import Flask, redirect, session, render_template, flash                                # Import the Flask class
 from flask_debugtoolbar import DebugToolbarExtension        # Import DebugToolbarExtension class
-from models import connect_db, db, User
-from forms import RegisterUserForm, LoginForm, CSRFProtectForm                          # Import connect_db, db, and model
+from models import connect_db, db, User, Note
+from forms import RegisterUserForm, LoginForm, CSRFProtectForm, AddNoteForm                          # Import connect_db, db, and model
 import os                                                   # Import os module for env vars & db link
 
 # TODO: Organize imports list:
@@ -21,11 +21,13 @@ debug = DebugToolbarExtension(app)                          # Initialize debug t
 
 connect_db(app)                                             # Connect database to the Flask app
 
+
 @app.get('/')
 def homepage():
     """Redirect to /register."""
 
     return redirect('/register')
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -87,36 +89,32 @@ def login():
 
     return render_template("login.html", form=form)
 
-# @app.get('/secret')
-# def render_secret_page():
-#     """Renders the secret logged-in page for users."""
-#     if session["username"]:
-#         return render_template("secret.html")
-#     else:
-#         return redirect(f"/users/{user.username}")
 
 @app.get('/users/<username>')
 def show_user_profile(username):
     """Renders the logged in user's page."""
     # TODO: Update docstring to reflect the if .. else behavior
 
-    user = User.query.get_or_404(username) # TODO: Do authentication before
-    # you're doing the work to get the user from the DB.
     form = CSRFProtectForm()
 
     if "username" not in session:
         flash("You must be logged in to view!")
         return redirect("/")
-    elif session["username"] != user.username:
+    elif session["username"] != username:
         # TODO: Could raise an UnauthorizedError to let them know they're not
         # allowed to go there.
         return redirect(f"/users/{session['username']}")
     else:
+        user = User.query.get_or_404(username)
+        notes = user.notes
+
         return render_template(
             "profile.html",
             user=user,
-            form=form
+            form=form,
+            notes=notes
         )
+
 
 @app.post('/logout')
 def logout_user():
@@ -130,3 +128,61 @@ def logout_user():
     # doing it from an incorrect source, etc.)
     return redirect("/")
 
+
+@app.route('/users/<username>/notes/add', methods=["GET", "POST"])
+def handle_add_note_form(username):
+    """Adds note to user profile on form validation
+    else renders template for errors"""
+
+    form = AddNoteForm()
+
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+
+        note = Note(title=title, content=content, owner=username)
+
+        db.session.add(note)
+        db.session.commit()
+
+        return redirect(f'/users/{username}')
+
+    else:
+
+        return render_template('add_note.html', form=form)
+
+
+@app.post('/users/<username>/delete')
+def delete_user_account(username):
+    """Delete user account and notes"""
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+
+        if "username" not in session:
+            flash("You must be logged in to do this action!")
+            return redirect("/")
+
+        elif session["username"] != username:
+            return redirect(f"/users/{session['username']}")
+
+        else:
+            flash("Account Successfully Deleted!")
+
+            user = User.query.get_or_404(username)
+            notes = user.notes
+
+            for note in notes:
+                db.session.delete(note)
+
+            db.session.delete(user)
+            db.session.commit()
+
+            session.pop("username", None)
+
+            return redirect('/')
+
+    else:
+
+        return redirect('/')
