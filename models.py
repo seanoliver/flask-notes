@@ -74,14 +74,13 @@ class User (db.Model):
 
 class Note(db.Model):
     """A note."""
-    """backref to 'User' class = 'user'"""
 
     __tablename__ = "notes"
 
     id = db.Column(
         db.Integer,
         primary_key=True,
-        autoincrement=True,
+        autoincrement=True, # TODO: Autoincrement is the default behavior of integer primary key
     )
 
     title = db.Column(
@@ -96,5 +95,7 @@ class Note(db.Model):
 
     owner = db.Column(
         db.String(20),
-        db.ForeignKey('users.username')
+        db.ForeignKey('users.username') # TODO: make this not nullable
     )
+
+    # user = backref to 'User' class

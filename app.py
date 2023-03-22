@@ -117,7 +117,7 @@ def show_user_profile(username):
         return redirect(f"/users/{session['username']}")
     else:
         user = User.query.get_or_404(username)
-        notes = user.notes
+        notes = user.notes # TODO: Doing this here is an optional decision because you have access to notes in the user object
 
         return render_template(
             "profile.html",
@@ -147,6 +147,16 @@ def handle_add_note_form(username):
 
     form = AddNoteForm()
 
+    # TODO: Need to prevent users from accessing other users' add notes page
+    if "username" not in session:
+        flash("You must be logged in to do this action!")
+        return redirect("/")
+
+    if username != session["username"]:
+        flash("This is not your note.")
+        return redirect(f'/users/{session["username"]}')
+
+
     if form.validate_on_submit():
         title = form.title.data
         content = form.content.data
@@ -169,9 +179,17 @@ def handle_edit_note_form(note_id):
     the user to the user's profile page."""
 
     note = Note.query.get_or_404(note_id)
-    form = EditNoteForm(obj=note)
-    csrf_form = CSRFProtectForm()
 
+    if "username" not in session:
+        flash("You must be logged in to do this action!")
+        return redirect("/")
+
+    if note.owner != session["username"]:
+        flash("This is not your note.")
+        return redirect(f'/users/{session["username"]}')
+
+    form = EditNoteForm(obj=note)
+    csrf_form = CSRFProtectForm() # Adding this for delete note button form
 
     if form.validate_on_submit():
         note.title = form.title.data
@@ -199,6 +217,7 @@ def delete_user_account(username):
 
     if form.validate_on_submit():
 
+        # TODO: Move authentication checks up before validate on submit
         if "username" not in session:
             flash("You must be logged in to do this action!")
             return redirect("/")
@@ -207,7 +226,7 @@ def delete_user_account(username):
             return redirect(f"/users/{session['username']}")
 
         else:
-            flash("Account Successfully Deleted!")
+            flash("Account Successfully Deleted!") # TODO: Move this to after db.session.commit so we know user has been deleted
 
             user = User.query.get_or_404(username)
             notes = user.notes
@@ -235,6 +254,8 @@ def delete_note(note_id):
 
     if form.validate_on_submit():
 
+        # TODO: Do authorization before getting the note and before form
+        # validation.
         if "username" not in session:
             flash("You must be logged in to do this action!")
             return redirect("/")

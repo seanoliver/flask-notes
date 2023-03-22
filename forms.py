@@ -47,7 +47,8 @@ class LoginForm(FlaskForm):
         validators=[InputRequired()]
     )
 
-
+# TODO: Possibly combine but if combine, rename to clarify that the form has a
+# dual purpose.
 class EditNoteForm(FlaskForm):
     """Form to edit an existing note"""
 
