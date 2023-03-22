@@ -1,25 +1,36 @@
-from flask import Flask, redirect, session, render_template, flash                                # Import the Flask class
-from flask_debugtoolbar import DebugToolbarExtension        # Import DebugToolbarExtension class
+# Import the Flask class
+from flask import Flask, redirect, session, render_template, flash
+# Import DebugToolbarExtension class
+from flask_debugtoolbar import DebugToolbarExtension
 from models import connect_db, db, User, Note
-from forms import RegisterUserForm, LoginForm, CSRFProtectForm, AddNoteForm                          # Import connect_db, db, and model
-import os                                                   # Import os module for env vars & db link
+# Import connect_db, db, and model
+from forms import RegisterUserForm, LoginForm, CSRFProtectForm, AddNoteForm, EditNoteForm
+# Import os module for env vars & db link
+import os
 
 # TODO: Organize imports list:
 #        - Start with os
 #        - Sections for flask / external modules
 #        - Sections for internal models, forms, etc.
 
-app = Flask(__name__)                                       # Create Flask app instance
-app.config['SECRET_KEY'] = "oh-so-secret"                   # Set app secret key
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False          # Disable Debug Toolbar redirect interception
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False        # Disable SQL Alchemy track modifications
-app.config['SQLALCHEMY_ECHO'] = True                        # Enable SQL Alchemy echo (print SQL statements)
+# Create Flask app instance
+app = Flask(__name__)
+# Set app secret key
+app.config['SECRET_KEY'] = "oh-so-secret"
+# Disable Debug Toolbar redirect interception
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+# Disable SQL Alchemy track modifications
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Enable SQL Alchemy echo (print SQL statements)
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(     # Set SQL Alchemy database URI
     "DATABASE_URL", "postgresql:///flask_notes")
 
-debug = DebugToolbarExtension(app)                          # Initialize debug toolbar
+# Initialize debug toolbar
+debug = DebugToolbarExtension(app)
 
-connect_db(app)                                             # Connect database to the Flask app
+# Connect database to the Flask app
+connect_db(app)
 
 
 @app.get('/')
@@ -44,12 +55,12 @@ def register():
 
         # TODO: Have a single register() function and pass user data into it
         user = User(
-            username = username,
-            password = User.get_password_hash(password),
-            email = email,
-            first_name = first_name,
-            last_name = last_name
-            )
+            username=username,
+            password=User.get_password_hash(password),
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
 
         # TODO: db.session.add typically lives in the models.py
         db.session.add(user)
@@ -152,6 +163,34 @@ def handle_add_note_form(username):
         return render_template('add_note.html', form=form)
 
 
+@app.route('/notes/<int:note_id>/update', methods=["GET", "POST"])
+def handle_edit_note_form(note_id):
+    """Display the form to edit a note and then once submitted, redirect
+    the user to the user's profile page."""
+
+    note = Note.query.get_or_404(note_id)
+    form = EditNoteForm(obj=note)
+    csrf_form = CSRFProtectForm()
+
+
+    if form.validate_on_submit():
+        note.title = form.title.data
+        note.content = form.content.data
+
+        db.session.commit()
+
+        return redirect(f'/users/{note.owner}')
+
+    else:
+
+        return render_template(
+            'edit_note.html',
+            note=note,
+            form=form,
+            csrf_form=csrf_form
+        )
+
+
 @app.post('/users/<username>/delete')
 def delete_user_account(username):
     """Delete user account and notes"""
@@ -185,4 +224,32 @@ def delete_user_account(username):
 
     else:
 
+        return redirect('/')
+
+@app.post('/notes/<int:note_id>/delete')
+def delete_note(note_id):
+    """Delete an individual note."""
+
+    form = CSRFProtectForm()
+    note = Note.query.get_or_404(note_id)
+
+    if form.validate_on_submit():
+
+        if "username" not in session:
+            flash("You must be logged in to do this action!")
+            return redirect("/")
+
+        elif session["username"] != note.owner:
+            flash("You can't delete that note!")
+            return redirect(f"/users/{session['username']}")
+
+        else:
+            flash("Note Successfully Deleted!")
+
+            db.session.delete(note)
+            db.session.commit()
+
+            return redirect(f"/users/{session['username']}")
+    else:
+        flash("Invalid Form Submission")
         return redirect('/')

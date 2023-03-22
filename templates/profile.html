@@ -15,7 +15,7 @@
 <ul>
 {% if notes %}
   {% for note in notes %}
-    <a href="notes/{{ note.id }}/update"><h4>{{ note.title }}</h4></a>
+    <a href="/notes/{{ note.id }}/update"><h4>{{ note.title }}</h4></a>
       <li>{{ note.content }}</li>
   {% endfor %}
 {% else %}
